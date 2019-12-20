@@ -338,3 +338,10 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+*.bmp
+/svpng.inc
+*.png
+*.jpg
+/Ray_Tracing_in_one_weekend_by_cpp.sln
+/Ray_Tracing_in_one_weekend_by_cpp.vcxproj
+/Ray_Tracing_in_one_weekend_by_cpp.vcxproj.filters
