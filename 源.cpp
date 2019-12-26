@@ -81,6 +81,6 @@ int main() {
 #if 0
 	toybmp(fopen("cornellbox2withbox2.bmp", "wb"), NX, NY, p, 0);
 #else
-	svpng(fopen("cornellbox2withbox.png", "wb"), NX, NY, img, 0);
+	svpng(fopen("cornellbox2rotate.png", "wb"), NX, NY, img, 0);
 #endif
 } 
