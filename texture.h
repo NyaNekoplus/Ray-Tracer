@@ -69,12 +69,12 @@ public:
 static vec3* perlin_generate() {
 	vec3* d = new vec3[256];
 	for (int i = 0; i < 256; ++i)
-		d[i] = unit_vector(vec3(-1+2*randow1, -1 + 2 * randow1, -1 + 2 * randow1));
+		d[i] = unit_vector(vec3(-1+2*drand48(), -1 + 2 * drand48(), -1 + 2 * drand48()));
 	return d;
 }
 static int* permute(int* d, int n) {		//´òÂÒ¹şÏ£ÖµÅÅĞò
 	for (int i = n - 1; i > 0; --i) {
-		int target = int(randow1 * (1 + n));
+		int target = int(drand48() * (1 + n));
 		int temp = d[i];
 		d[i] = d[target];
 		d[target] = temp;
@@ -161,4 +161,5 @@ vec3 image_texture::value(double u, double v, const vec3& p)const {
 	double b = int(data[3 * i + 3 * nx * j + 2]) / 255.0;
 	return vec3(r, g, b);
 }
+
 #endif

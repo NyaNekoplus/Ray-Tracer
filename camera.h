@@ -6,7 +6,7 @@
 vec3 random_in_unit_disk() {
 	vec3 p;
 	do {
-		p = 2.0 * vec3(randow1, randow1, 0) - vec3(1, 1, 0);
+		p = 2.0 * vec3(drand48(), drand48(), 0) - vec3(1, 1, 0);
 	} while (dot(p, p) >= 1.0);		//x^2 + y^2 = r^2
 	return p;
 }
@@ -34,7 +34,7 @@ public:
 	ray get_ray(double s, double t) {
 		vec3 rd = lens_radius * random_in_unit_disk();//半径乘单位圆盘上的随机点
 		vec3 offset = u * rd.x() + v * rd.y();//将点转换至uv坐标系
-		double time = time0 + randow1 * (time1 - time0);
+		double time = time0 + drand48() * (time1 - time0);
 		return ray(origin + offset, s * horizontal + t * vertical + lower_left_corner - origin - offset,time);
 	}
 

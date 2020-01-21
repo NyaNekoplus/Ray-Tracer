@@ -2,9 +2,24 @@
 #include <stdlib.h>
 #include <iostream>
 
-#define random(a,b) (randow1%(b-a+1)+a)
-#define randow1 (double((rand()%(100)))/100.0)	//获取[0,1]间的随机数
-#define PI 3.14159265358979323846
+#define random0(a,b) (random1%(b-a+1)+a)
+#define random1 (double((rand()%(100)))/100.0)	//获取[0,1]间的随机数
+#define PI 3.1415926535898
+#define _m 0x100000000LL  
+#define _c 0xB16  
+#define _a 0x5DEECE66DLL  
+
+static unsigned long long seed = 1;
+
+double drand48(void){
+	seed = (_a * seed + _c) & 0xFFFFFFFFFFFFLL;
+	unsigned int x = seed >> 16;
+	return  ((double)x / (double)_m);
+}
+
+void srand48(unsigned int i){
+	seed = (((long long int)i) << 16) | rand();
+}
 class vec3 {
 public:
 	vec3() {}
@@ -114,7 +129,7 @@ inline vec3& vec3::operator*=(const double t) {
 	e[2] *= t;
 	return *this;
 }inline vec3& vec3::operator/=(const double t) {
-	double k = 1.0f / t;
+	double k = 1.0 / t;
 	e[0] *= k;															
 	e[1] *= k;
 	e[2] *= k;
@@ -127,7 +142,17 @@ inline vec3 unit_vector(vec3 v) {
 vec3 random_in_unit_sphere() {
 	vec3 p;
 	do {
-		p = 2.0 * vec3(randow1, randow1, randow1) - vec3(1, 1, 1);	//前一个是随机直径，后一个单位圆圆心
-	} while (p.squared_length() >= 1.0);							//当随机点在园内时返回
-	return p;
+		p = 2.0 * vec3(drand48(), drand48(), drand48()) - vec3(1, 1, 1);	//前一个是随机直径，后一个单位圆圆心
+	} while (dot(p,p) >= 1.0);							//当随机点在园内时返回
+	return unit_vector(p);
+}
+
+inline vec3 random_cosine_direction() {
+	double r1 = drand48();
+	double r2 = drand48();
+	double z = sqrt(1 - r2);
+	double phi = 2 * PI * r1;
+	double x = cos(phi) * sqrt(r2)*2;
+	double y = sin(phi) * sqrt(r2)*2;
+	return vec3(x, y, z);
 }

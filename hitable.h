@@ -20,6 +20,8 @@ class hitable {
 public:
 	virtual bool hit(const ray& r, double t_min, double t_max, hit_record& rec)const = 0;		//纯虚函数，抽象类
 	virtual bool bounding_box(double t0, double t1, aabb& box)const = 0;	//time0,time1
+	virtual double  pdf_value(const vec3& o, const vec3& v) const { return 0.0; }
+	virtual vec3 random(const vec3& o) const { return vec3(1, 0, 0); }
 };
 
 class translate :public hitable {
@@ -92,7 +94,7 @@ bool rotate_y::hit(const ray& r, double t_min, double t_max, hit_record& rec)con
 	direction[0] = r.direction()[0] * cos_theta - sin_theta * r.direction()[2];
 	direction[2] = sin_theta * r.direction()[0] + cos_theta * r.direction()[2];
 	ray moved_r(origin, direction,r.time());
-	if (ptr->hit(moved_r, 0, 1, rec)) {
+	if (ptr->hit(moved_r, t_min, t_max, rec)) {
 		vec3 point = rec.p;
 		vec3 normal = rec.n;
 		point[0] = rec.p[0] * cos_theta + sin_theta * rec.p[2];			//转换击中点和法线
@@ -146,7 +148,7 @@ bool xy_rect::hit(const ray& r, double t_min, double t_max, hit_record& rec)cons
 	double y = r.origin().y() + t * r.direction().y();
 	if (x<x1 || x>x2 || y<y1 || y>y2)
 		return false;
-	rec.u = (x - x1) / (x2 - x1);
+	rec.u = (x - x1) / (x2 - x1);//uv coordinate(缩放
 	rec.v = (y - y1) / (y2 - y1);
 	rec.t = t;
 	rec.mat_ptr = mp;
@@ -164,6 +166,22 @@ public:
 	virtual bool bounding_box(double t0, double t1, aabb& box)const {
 		box = aabb(vec3(x1, k - 0.0001,z1 ), vec3(x2, k + 0.0001,z2 ));
 		return true;
+	}
+	virtual double  pdf_value(const vec3& o, const vec3& v) const {
+		hit_record rec;
+		if (this->hit(ray(o, v), 0.001, DBL_MAX, rec)) {
+			double area = (x2 - x1) * (z2 - z1);
+			double distance_squared = rec.t * rec.t * v.squared_length();
+			double cosine = fabs(dot(v, rec.n) / v.length());
+			return  distance_squared / (cosine * area);
+		}
+		else
+			return 0;
+	}
+	virtual vec3 random(const vec3& o) const {
+		vec3 random_point = vec3(x1 + drand48() * (x2 - x1), k,
+			z1 + drand48() * (z2 - z1));
+		return random_point - o;
 	}
 	material* mp;
 	double x1, x2, z1, z2, k;

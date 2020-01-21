@@ -52,7 +52,7 @@ public:
 };
 
 bvh_node::bvh_node(hitable** l, int n, double time0, double time1) {
-	int axis = int(3 * randow1);
+	int axis = int(3 * random1);
 	if (axis == 0)
 		qsort(l, n, sizeof(hitable*), box_x_compare);
 	else if(axis==1)

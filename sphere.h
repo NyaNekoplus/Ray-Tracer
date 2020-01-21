@@ -3,7 +3,7 @@
 
 #include "hitable.h"
 
-void get_sphere_uv(const vec3& p, double& u, double& v) {
+void get_sphere_uv(const vec3& p, double& u, double& v) {//turn to spherical coordinate
 	double phi = atan2(p.z(), p.x());
 	double theta = asin(p.y());
 	u = 1 - (phi + PI) / (2 * PI);

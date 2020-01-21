@@ -2,6 +2,7 @@
 #define MATERIAL_H_
 struct hit_record;
 #include "ray.h"
+#include "onb.h"
 #include "hitable.h"
 #include "texture.h"
 
@@ -27,12 +28,23 @@ double schlick(double cos, double ref_idx) {
 	return r0 + (1 - r0) * pow((1 - cos), 5);
 }
 
+struct scatter_record
+{
+	ray specular_ray;//镜面光线
+	bool is_specular;//是否为镜面
+	vec3 attenuation;//衰减
+	pdf* pdf_ptr;	//pdf指针
+};
 class material {
 public:
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const = 0;
-	virtual vec3 emitted(double u, double v, const vec3& p)const {
-		return vec3(0, 0, 0);
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered,double& pdf) const {
+		return false;
 	}
+	virtual double scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered)const {
+		return 0;
+	}
+	virtual vec3 emitted(const ray& r_in,const hit_record& rec,double u, double v, const vec3& p) const { 
+		return vec3(0, 0, 0); }
 };
 
 class dielectric :public material {
@@ -62,7 +74,7 @@ public:
 		else {
 			reflect_prob = 1.0;
 		}
-		if (randow1 < reflect_prob) {											//随机数小于菲涅尔反射比
+		if (drand48() < reflect_prob) {											//随机数小于菲涅尔反射比
 			scattered = ray(rec.p, reflected, r_in.time());									//散射向量设为反射向量
 		}
 		else {																	//随机数大于等于菲涅尔反射比
@@ -75,11 +87,36 @@ public:
 class lambertian :public material {
 public:
 	lambertian(texture* a) :albedo(a) {}
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const {
+	double scattering_pdf(const ray& r_in, const hit_record& rec, const ray& scattered)const {
+		double cosine = dot(rec.n, unit_vector(scattered.direction()));//cosθ
+		if (cosine < 0)cosine = 0;
+		return cosine / PI;
+	}
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered,double& pdf) const {
+#if 0	// p(direction) = cos(theta) / Pi
 		vec3 target = rec.p + rec.n + random_in_unit_sphere();
-		scattered = ray(rec.p, target - rec.p,r_in.time());
+		scattered = ray(rec.p, unit_vector(target - rec.p),r_in.time());
 		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		pdf = dot(rec.n, scattered.direction()) / PI;
 		return true;
+#elif 1
+		onb uvw;
+		uvw.build_from_w(rec.n);
+		vec3 direction = uvw.local(random_cosine_direction());
+		scattered = ray(rec.p, unit_vector(direction), r_in.time());
+		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		pdf = dot(uvw.w(), scattered.direction()) / PI;
+		return true;
+#elif 0	// ?p(direction) = 1/(2*Pi) ? 半球随机取样
+		vec3 direction;
+		do {
+			direction = random_in_unit_sphere();
+		} while (dot(direction, rec.n) < 0);
+		scattered = ray(rec.p, unit_vector(direction), r_in.time());
+		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		pdf = 0.5f / PI;
+		return true;
+#endif
 	}
 	texture* albedo;								//albedo：漫反射系数
 };
@@ -87,7 +124,7 @@ public:
 class metal :public material {
 public:
 	metal(const vec3& a, double f) :albedo(a) { if (f < 1)  fuzz = f; else fuzz = 1; }
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const {
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf) const {
 		vec3 reflected = reflect(unit_vector(r_in.direction()), rec.n);
 		scattered = ray(rec.p, reflected+fuzz*random_in_unit_sphere(), r_in.time());		//偏移模糊系数*随机单位圆内点，系数越大偏移愈大
 		attenuation = albedo;
@@ -100,12 +137,26 @@ public:
 class diffuse_light :public material {
 public:
 	diffuse_light(texture* a):emit(a){}
-	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered) const {
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf) const {
 		return false;
 	}
-	virtual vec3 emitted(double u, double v, const vec3& p)const {
-		return emit->value(u, v, p);
+	virtual vec3 emitted(const ray& r_in, const hit_record& rec, double u, double v, const vec3& p)const {
+		if (dot(rec.n, r_in.direction()) < 0.0)
+			return emit->value(u, v, p);
+		else
+			return vec3(0, 0, 0);
 	}
 	texture* emit;
+};
+
+class isotropic :public material {//constant medium
+public:
+	isotropic(texture* a) :albedo(a){}
+	virtual bool scatter(const ray& r_in, const hit_record& rec, vec3& attenuation, ray& scattered, double& pdf) const {
+		scattered = ray(rec.p, random_in_unit_sphere());
+		attenuation = albedo->value(rec.u, rec.v, rec.p);
+		return true;
+	}
+	texture* albedo;
 };
 #endif

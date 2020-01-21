@@ -17,7 +17,7 @@ bool hitable_list::hit(const ray& r, double t_min, double t_max, hit_record& rec
 	hit_record temp_rec;
 	bool hit_anything = false;
 	double closest_so_far = t_max;
-	for (int i = 0; i < list_size; ++i) {
+	for (int i = 0; i < list_size; ++i) {//find closest object
 		if (list[i]->hit(r, t_min, closest_so_far, temp_rec)) {
 			hit_anything = true;
 			closest_so_far = temp_rec.t;
